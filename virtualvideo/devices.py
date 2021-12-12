@@ -90,11 +90,19 @@ class FakeVideoDevice():
                                     framerate=fps,
                                     s="{}x{}".format(camx, camy))
 
-    def __delay_til_next_frame(self):
+    def __delay_til_next_frame(self, quiet = True):
         """delays reading of the next frame to match ingoing fps"""
         timediff = (time.time() - self.last_frame_time)
-        
-        time.sleep(max((1 / self.vid_source.fps() - timediff), 0))
+        sleep = max((1 / self.vid_source.fps() - timediff), 0)
+
+        if quiet:
+            if sleep > 0:
+                try:
+                    outs, errs = self.ffmpeg_proc.communicate(timeout=sleep)
+                except TimeoutExpired:
+                    pass
+        else:
+            time.sleep(sleep)
         
         self.last_frame_time = time.time()
 
@@ -136,4 +144,4 @@ class FakeVideoDevice():
 
             self.ffmpeg_proc.stdin.write(image.tobytes())
 
-            self.__delay_til_next_frame()
+            self.__delay_til_next_frame(quiet)
